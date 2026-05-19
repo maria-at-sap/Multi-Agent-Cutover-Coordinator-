@@ -15,9 +15,9 @@ The orchestrator manages the full lifecycle of an SAP cutover execution:
 
 | Agent | Role | Responsibility |
 |-------|------|----------------|
-| **Sonia** | Analysis | Reads the plan, tracks task status, validates SAP prerequisites |
-| **Maria** | Notification | Sends Microsoft Teams messages to responsible parties |
-| **Silvia** | Formatting | Color-codes the Excel workbook and generates summary charts |
+| **1** | Analysis | Reads the plan, tracks task status, validates SAP prerequisites |
+| **2** | Notification | Sends Microsoft Teams messages to responsible parties |
+| **3** | Formatting | Color-codes the Excel workbook and generates summary charts |
 
 ## Architecture
 
@@ -63,8 +63,27 @@ A task with status **Not Ok** becomes a blocker and halts the notification pipel
 
 ## Setup
 
-**1. Clone the repository and install dependencies**
+**1. Clone the repository, setup Python virtual environment and install dependencies**
 
+ Create Python venv:
+```bash
+python3 -m venv .venv
+```
+Activate Python venv:
+### In cmd.exe
+```bash
+.venv\Scripts\activate.bat
+```
+### In PowerShell
+```bash
+.venv\Scripts\Activate.ps1
+```
+### In Mac
+```bash
+source .venv/bin/activate
+```
+
+## Install dependencies:
 ```bash
 pip install -r requirements.txt
 ```
