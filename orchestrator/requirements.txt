@@ -1,0 +1,21 @@
+# Multi-Agent Cutover Coordinator
+# Combines: Sonia (analysis) + Maria (Teams notification) + Silvia (Excel coloring)
+
+# ── Core agent framework ───────────────────────────────────────────────────────
+a2a-sdk
+langchain-core
+langgraph
+langchain-openai
+
+# ── HTTP & notifications (Maria) ───────────────────────────────────────────────
+requests
+python-dotenv
+
+# ── Excel processing (Sonia + Silvia) ─────────────────────────────────────────
+openpyxl
+pandas
+python-dateutil
+
+# ── Server (Sonia's A2A interface) ────────────────────────────────────────────
+uvicorn[standard]
+click

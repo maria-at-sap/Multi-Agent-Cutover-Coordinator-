@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Multi-Agent Cutover Coordinator</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    background: #f0f2f5;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* Header */
+  .header {
+    background: linear-gradient(135deg, #1a365d, #2b6cb0);
+    color: #fff;
+    padding: 14px 24px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  }
+  .header-icon {
+    width: 36px; height: 36px;
+    background: rgba(255,255,255,0.2);
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px;
+  }
+  .header h1 { font-size: 18px; font-weight: 600; }
+  .header p { font-size: 12px; opacity: 0.8; }
+  .status-dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: #48bb78; margin-left: auto;
+    box-shadow: 0 0 6px #48bb78;
+  }
+
+  /* Chat area */
+  .chat-area {
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .msg {
+    max-width: 75%;
+    padding: 12px 16px;
+    border-radius: 16px;
+    line-height: 1.5;
+    font-size: 14px;
+    word-wrap: break-word;
+    white-space: pre-wrap;
+  }
+  .msg-user {
+    align-self: flex-end;
+    background: #2b6cb0;
+    color: #fff;
+    border-bottom-right-radius: 4px;
+  }
+  .msg-agent {
+    align-self: flex-start;
+    background: #fff;
+    color: #1a202c;
+    border-bottom-left-radius: 4px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  }
+  .msg-agent strong { color: #2b6cb0; }
+  .msg-error {
+    align-self: center;
+    background: #fed7d7;
+    color: #9b2c2c;
+    border-radius: 8px;
+    font-size: 13px;
+  }
+  .msg-system {
+    align-self: center;
+    background: #ebf8ff;
+    color: #2b6cb0;
+    border-radius: 8px;
+    font-size: 13px;
+    text-align: center;
+  }
+
+  .typing {
+    align-self: flex-start;
+    padding: 12px 20px;
+    background: #fff;
+    border-radius: 16px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    display: none;
+  }
+  .typing.visible { display: flex; gap: 4px; align-items: center; }
+  .typing span {
+    width: 8px; height: 8px; background: #a0aec0; border-radius: 50%;
+    animation: bounce 1.4s infinite;
+  }
+  .typing span:nth-child(2) { animation-delay: 0.2s; }
+  .typing span:nth-child(3) { animation-delay: 0.4s; }
+  @keyframes bounce {
+    0%, 80%, 100% { transform: translateY(0); }
+    40% { transform: translateY(-6px); }
+  }
+
+  /* Input area */
+  .input-area {
+    background: #fff;
+    padding: 16px 24px;
+    border-top: 1px solid #e2e8f0;
+    display: flex;
+    gap: 10px;
+    align-items: flex-end;
+  }
+  .input-area textarea {
+    flex: 1;
+    padding: 10px 14px;
+    border: 2px solid #e2e8f0;
+    border-radius: 12px;
+    font-size: 14px;
+    font-family: inherit;
+    resize: none;
+    min-height: 44px;
+    max-height: 120px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .input-area textarea:focus { border-color: #2b6cb0; }
+  .input-area button {
+    padding: 10px 20px;
+    background: #2b6cb0;
+    color: #fff;
+    border: none;
+    border-radius: 12px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s;
+    white-space: nowrap;
+  }
+  .input-area button:hover { background: #1a365d; }
+  .input-area button:disabled { background: #a0aec0; cursor: not-allowed; }
+
+  /* Quick actions */
+  .quick-actions {
+    padding: 8px 24px;
+    background: #fff;
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .quick-btn {
+    padding: 6px 12px;
+    border: 1px solid #e2e8f0;
+    border-radius: 20px;
+    background: #f7fafc;
+    font-size: 12px;
+    color: #4a5568;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .quick-btn:hover { background: #ebf8ff; border-color: #2b6cb0; color: #2b6cb0; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-icon">&#9881;</div>
+  <div>
+    <h1>Multi-Agent Cutover Coordinator</h1>
+    <p>Sonia · Maria · Silvia — Analysis, Teams Notification &amp; Excel Formatting</p>
+  </div>
+  <div class="status-dot" id="statusDot" title="Connected"></div>
+</div>
+
+<div class="quick-actions">
+  <button class="quick-btn" onclick="sendQuick('Load the cutover plan from Cutover Plan Test.xlsx')">Load Plan</button>
+  <button class="quick-btn" onclick="sendQuick('Show me the status summary')">Status Summary</button>
+  <button class="quick-btn" onclick="sendQuick('What tasks are overdue?')">Overdue Tasks</button>
+  <button class="quick-btn" onclick="sendQuick('Who is responsible for the next task?')">Next Task</button>
+  <button class="quick-btn" onclick="sendQuick('Show blocked tasks')">Blocked</button>
+  <button class="quick-btn" onclick="sendQuick('Send Teams notification for the next task')">&#128276; Notify Teams</button>
+  <button class="quick-btn" onclick="sendQuick('Color the Excel file with current statuses')">&#127912; Color Excel</button>
+</div>
+
+<div class="chat-area" id="chat">
+  <div class="msg msg-system">
+    Welcome to the <strong>Multi-Agent Cutover Coordinator</strong>!<br>
+    Sonia analyses the plan · Alex notifies via Teams · Silvia styles the Excel. Maria orchestrates.<br>
+    Click <strong>"Load Plan"</strong> above or type a file path to get started.
+  </div>
+</div>
+
+<div class="typing" id="typing">
+  <span></span><span></span><span></span>
+</div>
+
+<div class="input-area">
+  <textarea id="input" placeholder="Type a message... (Enter to send, Shift+Enter for new line)" rows="1"></textarea>
+  <button id="sendBtn" onclick="send()">Send</button>
+</div>
+
+<script>
+const chat = document.getElementById('chat');
+const input = document.getElementById('input');
+const sendBtn = document.getElementById('sendBtn');
+const typing = document.getElementById('typing');
+const statusDot = document.getElementById('statusDot');
+
+let msgCounter = 0;
+
+input.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    send();
+  }
+});
+
+// Auto-resize textarea
+input.addEventListener('input', () => {
+  input.style.height = 'auto';
+  input.style.height = Math.min(input.scrollHeight, 120) + 'px';
+});
+
+function addMsg(text, cls) {
+  const div = document.createElement('div');
+  div.className = 'msg ' + cls;
+  div.textContent = text;
+  chat.appendChild(div);
+  chat.scrollTop = chat.scrollHeight;
+}
+
+function sendQuick(text) {
+  input.value = text;
+  send();
+}
+
+async function send() {
+  const text = input.value.trim();
+  if (!text) return;
+
+  addMsg(text, 'msg-user');
+  input.value = '';
+  input.style.height = 'auto';
+
+  sendBtn.disabled = true;
+  typing.classList.add('visible');
+  chat.scrollTop = chat.scrollHeight;
+
+  msgCounter++;
+  const msgId = 'msg-' + msgCounter;
+
+  try {
+    const res = await fetch('/', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        jsonrpc: '2.0',
+        method: 'message/send',
+        id: String(msgCounter),
+        params: {
+          message: {
+            role: 'user',
+            parts: [{ kind: 'text', text: text }],
+            messageId: msgId
+          }
+        }
+      })
+    });
+
+    const data = await res.json();
+
+    if (data.error) {
+      addMsg('Error: ' + (data.error.message || JSON.stringify(data.error)), 'msg-error');
+    } else if (data.result) {
+      const result = data.result;
+      let agentText = '';
+
+      // Try to extract text from artifacts first
+      if (result.artifacts && result.artifacts.length > 0) {
+        for (const artifact of result.artifacts) {
+          if (artifact.parts) {
+            for (const part of artifact.parts) {
+              if (part.kind === 'text' || part.text) {
+                agentText += (part.text || '') + '\n';
+              }
+            }
+          }
+        }
+      }
+
+      // Fallback: try status message
+      if (!agentText.trim() && result.status && result.status.message) {
+        const msg = result.status.message;
+        if (msg.parts) {
+          for (const part of msg.parts) {
+            if (part.kind === 'text' || part.text) {
+              agentText += (part.text || '') + '\n';
+            }
+          }
+        }
+      }
+
+      // Fallback: dump the result
+      if (!agentText.trim()) {
+        agentText = JSON.stringify(result, null, 2);
+      }
+
+      addMsg(agentText.trim(), 'msg-agent');
+    } else {
+      addMsg(JSON.stringify(data, null, 2), 'msg-agent');
+    }
+  } catch (err) {
+    addMsg('Connection error: ' + err.message, 'msg-error');
+    statusDot.style.background = '#fc8181';
+    statusDot.title = 'Disconnected';
+  } finally {
+    sendBtn.disabled = false;
+    typing.classList.remove('visible');
+    chat.scrollTop = chat.scrollHeight;
+    input.focus();
+  }
+}
+
+// Check connection on load
+fetch('/.well-known/agent.json')
+  .then(r => r.json())
+  .then(() => {
+    statusDot.style.background = '#48bb78';
+    statusDot.title = 'Connected';
+  })
+  .catch(() => {
+    statusDot.style.background = '#fc8181';
+    statusDot.title = 'Disconnected';
+  });
+</script>
+</body>
+</html>
