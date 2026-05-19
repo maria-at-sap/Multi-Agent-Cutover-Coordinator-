@@ -13,18 +13,10 @@ build/
 venv/
 env/
 
-Approach1/
-Approach2/
-Approach3/
-
 
 # Environment / secrets
 .env
 *.env
-
-# Excel working files (exclude actual data files)
-*.xlsx
-*.xls
 
 # Logs
 *.log
