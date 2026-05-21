@@ -2,7 +2,7 @@
 # Combines: Sonia (analysis) + Maria (Teams notification) + Silvia (Excel coloring)
 
 # ── Core agent framework ───────────────────────────────────────────────────────
-a2a-sdk
+a2a-sdk==0.3
 langchain-core
 langgraph
 langchain-openai
@@ -19,3 +19,4 @@ python-dateutil
 # ── Server (Sonia's A2A interface) ────────────────────────────────────────────
 uvicorn[standard]
 click
+
